@@ -1,0 +1,72 @@
+/* Minimal phone-first styling. One file, no build step. */
+* { box-sizing: border-box; }
+body {
+  font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  margin: 0; color: #1a1a1a; background: #fafafa;
+}
+header {
+  background: #111; color: #fff; padding: 0.75rem 1rem; position: sticky; top: 0; z-index: 5;
+}
+header h1 { margin: 0; font-size: 1.2rem; }
+header h1 a { color: #fff; text-decoration: none; }
+header .sub { margin: 0.25rem 0 0; font-size: 0.8rem; color: #bbb; }
+header .tz { display: inline-block; margin-left: 0.5rem; color: #888; }
+nav { margin-top: 0.5rem; }
+nav a { color: #6cf; margin-right: 1rem; text-decoration: none; font-size: 0.9rem; }
+main { padding: 0.5rem 1rem 3rem; max-width: 720px; margin: 0 auto; }
+footer { padding: 1rem; text-align: center; color: #999; font-size: 0.75rem; }
+
+.planbar { display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
+.planbar label { display: flex; flex-direction: column; font-size: 0.8rem; color: #555; }
+.planbar input { font-size: 1rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 6px; }
+.planbar button, .ok, .hint { font-size: 0.95rem; }
+.planbar button { padding: 0.45rem 0.9rem; border: 0; border-radius: 6px; background: #111; color: #fff; }
+.hint { color: #666; background: #fff7e6; padding: 0.5rem 0.75rem; border-radius: 6px; }
+.ok { color: #156d2b; background: #e9f8ee; padding: 0.5rem 0.75rem; border-radius: 6px; }
+
+.day { margin: 1.25rem 0; }
+.day > h2 { font-size: 1.1rem; border-bottom: 2px solid #111; padding-bottom: 0.25rem; }
+.day .date, .zone, .group, .eid { color: #999; font-weight: normal; font-size: 0.75rem; }
+.venue { margin: 0.75rem 0; }
+.venue h3 { font-size: 0.95rem; margin: 0.5rem 0 0.25rem; color: #333; }
+
+ul.events, ul.conflicts { list-style: none; margin: 0; padding: 0; }
+.event { border-bottom: 1px solid #eee; }
+.event label { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.5rem 0.25rem; cursor: pointer; }
+.event input[type=checkbox] { width: 1.4rem; height: 1.4rem; flex: 0 0 auto; }
+.time { font-variant-numeric: tabular-nums; color: #444; min-width: 3.2rem; font-weight: 600; }
+.title { flex: 1; }
+.group { background: #eef; padding: 0 0.3rem; border-radius: 4px; }
+
+.conflict { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.25rem; border-bottom: 1px solid #eee; }
+.clash { display: flex; flex-direction: column; gap: 0.2rem; }
+.vs { color: #c0392b; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.mins { color: #c0392b; font-size: 0.8rem; white-space: nowrap; }
+
+/* Repeated experiences panel (group wants) */
+.repeats { margin: 1rem 0 1.5rem; }
+.repeats > h2 { font-size: 1.1rem; border-bottom: 2px solid #111; padding-bottom: 0.25rem; }
+ul.groups { list-style: none; margin: 0.5rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.group-card { border: 1px solid #ddd; border-radius: 8px; padding: 0.6rem 0.75rem; }
+.group-card.repeat { border-left: 4px solid #156d2b; }
+.group-card.series { border-left: 4px solid #6a5acd; }
+.group-head { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.group-label { font-weight: 700; }
+.group-venue { color: #777; font-size: 0.8rem; }
+.group-kind { margin-left: auto; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #888; }
+.group-toggle label { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; color: #156d2b; font-size: 0.9rem; }
+.group-toggle input[type=checkbox] { width: 1.3rem; height: 1.3rem; }
+ul.instances { list-style: none; margin: 0.3rem 0 0; padding: 0; }
+ul.instances li { padding: 0.15rem 0; font-size: 0.85rem; }
+ul.instances li.wanted { font-weight: 600; }
+ul.instances a { color: inherit; text-decoration: none; }
+ul.instances a:hover { text-decoration: underline; }
+
+/* magic-link landing + messages */
+.planbar { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; margin: 0.5rem 0; }
+.planbar label { display: flex; flex-direction: column; font-size: 0.8rem; color: #555; gap: 0.2rem; }
+.planbar input { padding: 0.5rem; font-size: 1rem; border: 1px solid #bbb; border-radius: 6px; min-width: 12rem; }
+.planbar button { padding: 0.55rem 1rem; font-size: 1rem; border: 0; border-radius: 6px; background: #111; color: #fff; cursor: pointer; }
+.err { color: #c0392b; background: #fdecea; padding: 0.5rem 0.75rem; border-radius: 6px; }
+.maplink { font-size: 0.72rem; font-weight: normal; color: #06c; text-decoration: none; }
+.maplink:hover { text-decoration: underline; }

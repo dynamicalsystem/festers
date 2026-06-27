@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}link sent — festers{% endblock %}
+{% block content %}
+<h2>Check your messages</h2>
+<p class="ok">{{ message }}</p>
+<p class="hint">Open the link on this device and bookmark it — that link is how you
+  get back to edit your plan. Requesting again sends a fresh link and retires the
+  old one.</p>
+<p><a href="/">← back to the schedule</a></p>
+{% endblock %}

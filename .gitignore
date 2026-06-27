@@ -1,0 +1,30 @@
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# local env / secrets
+.env
+# OCI credentials - never commit
+.oci/
+
+# os
+.DS_Store
+
+# tooling
+.claude/
+.mount-probe
+
+# runtime data, not source
+# persisted user plans (Contract B)
+data/plans/*.json
+# runtime auth token store
+data/auth/
+
+# source material (regenerable / not committed by convention)
+sources/
+
+# working journal (ephemeral WIP meta)
+NIGHT-LOG.md

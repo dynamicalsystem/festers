@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{% if token %}your plan{% else %}schedule{% endif %} — festers{% endblock %}
+{% block content %}
+{% if token %}
+<p class="planbar hint">This is <strong>your plan</strong> — bookmark this page; the link is your key to edit it.</p>
+{% else %}
+<form class="planbar" method="post" action="/request-link">
+  <label>Your phone number
+    <input name="phone" type="tel" inputmode="tel" placeholder="+447700900123" required>
+  </label>
+  <button type="submit">Send my link</button>
+</form>
+<p class="hint">Browse the festival below. Enter your number to get a private link
+  (sent over Signal) to build and edit your own plan.</p>
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+{% endif %}
+
+{% if groups %}
+<section class="repeats">
+  <h2>Repeated experiences</h2>
+  <p class="hint">Things that run more than once. A <strong>repeat</strong> is the
+    same experience on different days — want it once and the planner picks the
+    session. A <strong>series</strong> is distinct sessions under one strand —
+    pick the ones you want individually below.</p>
+  <ul class="groups">
+    {% for g in groups %}
+    <li class="group-card {{ 'repeat' if g.substitutable else 'series' }}">
+      <div class="group-head">
+        <span class="group-label">{{ g.label }}</span>
+        <span class="group-venue">{{ g.venue }}</span>
+        <span class="group-kind">{{ 'repeat ×%d'|format(g.instances|length) if g.substitutable else 'series ×%d'|format(g.instances|length) }}</span>
+      </div>
+      {% if g.substitutable and token %}
+      <form method="post" action="{{ plan_base }}/toggle?next={{ plan_base }}" class="toggle group-toggle">
+        <input type="hidden" name="ref" value="{{ g.ref }}">
+        <input type="hidden" name="kind" value="collection">
+        <label>
+          <input type="checkbox" onchange="toggleWant(this)" {% if g.wanted %}checked{% endif %}>
+          want any one — let the planner pick the session
+        </label>
+      </form>
+      {% endif %}
+      <ul class="instances">
+        {% for inst in g.instances %}
+        <li class="{{ 'wanted' if inst.wanted else '' }}">
+          <a href="#{{ inst.id }}"><span class="time">{{ inst.day }} {{ inst.time }}</span>
+            <span class="title">{{ inst.title }}</span></a>
+        </li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% for day in days %}
+<section class="day">
+  <h2>{{ day.label }} <span class="date">{{ day.date }}</span></h2>
+  {% for venue in day.venues %}
+  <section class="venue">
+    <h3>{{ venue.name }} <span class="zone">{{ venue.zone }}</span>
+      {% if venue.maps_url %}<a class="maplink" href="{{ venue.maps_url }}" target="_blank" rel="noopener">map&nbsp;↗</a>{% endif %}</h3>
+    <ul class="events">
+      {% for ev in venue.events %}
+      <li class="event" id="{{ ev.id }}">
+        <form method="post" action="{{ plan_base }}/toggle?next={{ plan_base }}" class="toggle">
+          <input type="hidden" name="ref" value="{{ ev.id }}">
+          <input type="hidden" name="kind" value="event">
+          <label>
+            {% if token %}
+            <input type="checkbox" onchange="toggleWant(this)"
+                   {% if ev.id in wanted_refs %}checked{% endif %}>
+            {% endif %}
+            <span class="time">{{ ev.time }}</span>
+            <span class="title">{{ ev.title }}</span>
+            {% if ev.collection %}<span class="group">{{ ev.collection }}</span>{% endif %}
+            <span class="eid">{{ ev.id }}</span>
+          </label>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</section>
+{% endfor %}
+
+{% if token %}
+<script>
+// Save a tick in-place (no reload, no scroll jump). Reverts the box on failure.
+async function toggleWant(cb) {
+  const form = cb.closest('form');
+  cb.disabled = true;
+  try {
+    const r = await fetch(form.action, {
+      method: 'POST',
+      body: new URLSearchParams(new FormData(form)),
+      headers: {'X-Requested-With': 'fetch'},
+    });
+    if (r.status >= 400) throw new Error(r.status);
+  } catch (e) {
+    cb.checked = !cb.checked;           // undo the visual change
+    alert('Could not save that change — is your link still valid?');
+  } finally {
+    cb.disabled = false;
+  }
+}
+</script>
+{% endif %}
+{% endblock %}

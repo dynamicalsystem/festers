@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}festers{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/">festers</a></h1>
+    <p class="sub">{{ festival.name }}{% if festival.subtitle %} — {{ festival.subtitle }}{% endif %}
+      <span class="tz">times {{ festival.utc_offset_during_festival }} ({{ festival.timezone }})</span></p>
+    {% if plan_base %}
+    <nav>
+      <a href="/">schedule</a>
+      <a href="{{ plan_base }}">your plan</a>
+      <a href="{{ plan_base }}/conflicts">conflicts{% if conflict_count %} ({{ conflict_count }}){% endif %}</a>
+      <a href="{{ plan_base }}/optimise">optimise</a>
+    </nav>
+    {% endif %}
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    <p>All times are festival local ({{ festival.utc_offset_during_festival }}); your device clock is ignored.</p>
+  </footer>
+</body>
+</html>

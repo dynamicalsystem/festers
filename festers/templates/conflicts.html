@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}conflicts — festers{% endblock %}
+{% block content %}
+<h2>Conflicts in your plan</h2>
+{% if not conflict_days %}
+<p class="ok">No conflicts. Nothing in this wishlist forces a choice
+  {% if travel_aware %}(travel-aware){% else %}(time-overlap only; travel not yet modelled){% endif %}.</p>
+{% else %}
+<p class="hint">Each row is a pair of wanted events you cannot both attend
+  {% if travel_aware %}allowing for travel time{% else %}(time overlap only — travel feasibility lands with loop-04){% endif %}.</p>
+{% for day in conflict_days %}
+<section class="day">
+  <h3>{{ day.label }} <span class="date">{{ day.date }}</span></h3>
+  <ul class="conflicts">
+    {% for c in day.conflicts %}
+    <li class="conflict">
+      <span class="clash">
+        <span class="ev"><span class="time">{{ c.a_time }}</span> {{ c.a_title }} <span class="eid">{{ c.a_id }}</span></span>
+        <span class="vs">overlaps</span>
+        <span class="ev"><span class="time">{{ c.b_time }}</span> {{ c.b_title }} <span class="eid">{{ c.b_id }}</span></span>
+      </span>
+      {% if c.overlap_minutes %}<span class="mins">{{ c.overlap_minutes }} min</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}
