@@ -1,0 +1,38 @@
+name: deploy
+
+# Auto-deploy on merge to main. Runs only after `ci` is green for the same
+# commit, so a red build never reaches the box.
+#
+# The deploy job runs on a SELF-HOSTED runner on the Oracle box (label
+# `festers-prod`). That deliberately keeps every credential ON the box / in the
+# private ops repo - nothing secret lives in this public repo's Actions. The
+# job just pulls the merged commit and runs scripts/deploy.sh locally.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  wait-for-ci:
+    name: gate on ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the ci run for this commit to succeed
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: pytest
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+  deploy:
+    name: deploy to oracle box
+    needs: wait-for-ci
+    runs-on: [self-hosted, festers-prod]
+    concurrency:
+      group: festers-prod-deploy   # never let two deploys overlap
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        run: bash scripts/deploy.sh

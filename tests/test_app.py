@@ -70,6 +70,15 @@ def test_schedule_json_endpoint(client):
     assert len(body["venues"]) == 15
 
 
+def test_healthz_reports_ok_and_event_count(client):
+    # The deploy health-check depends on this: 200 + the loaded event count.
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["events"] == len(client.get("/api/schedule").json()["events"])
+
+
 def test_public_browse_lists_all_events_without_checkboxes(client):
     from festers.schedule import load_schedule
 
