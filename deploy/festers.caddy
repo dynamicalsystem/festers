@@ -1,7 +1,25 @@
-# festers reverse-proxy snippet for the host Caddy.
+# festers reverse-proxy snippet for Caddy.
 # Drop into the box's Caddy config (e.g. /etc/caddy/conf.d/festers.caddy if the
 # box auto-imports conf.d, or paste into the Caddyfile) and reload Caddy.
-# Caddy runs on the host, so it reaches the loopback-bound container directly.
+#
+# The upstream MUST match FESTERS_BIND_HOST:8000 (see deploy/README.md):
+#   - host Caddy reaching a loopback-bound container -> 127.0.0.1:8000
+#   - containerised Caddy (this box: Docker on `caddy-net`) can't reach the host
+#     loopback, so it uses that bridge's gateway IP -> 172.20.0.1:8000
+# Reload a containerised Caddy with: docker exec caddy caddy reload
+#
+# Keep `header_up X-Real-IP`: the app rate-limits magic-link requests per client
+# IP, so without it every request looks like it comes from the proxy.
 festers.dynamicalsystem.com {
-	reverse_proxy 127.0.0.1:8000
+	reverse_proxy 172.20.0.1:8000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/festers.log {
+			roll_size 100mb
+			roll_keep 5
+		}
+	}
 }

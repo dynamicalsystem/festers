@@ -29,6 +29,10 @@ $EDITOR festers.env
       `FESTERS_SIGNAL_URL=http://signal:8080` and `FESTERS_SIGNAL_FROM=+447377115354`
       (gigbot) — `run.sh` joins `signal-net` so the name resolves. Confirm the
       `signal-net` network exists (`podman network ls`) before `run.sh`.
+- [ ] Set `FESTERS_BIND_HOST`. This box's Caddy is a Docker container on
+      `caddy-net` and can't reach the host loopback, so
+      `FESTERS_BIND_HOST=172.20.0.1` (the `caddy-net` gateway, a host interface).
+      Leave it unset (`127.0.0.1`) only if Caddy runs on the host.
 
 ```sh
 # carry over existing wishlists + tokens
@@ -42,7 +46,7 @@ cp -a ~/festers/data/auth/.  ~/.local/state/dynamicalsystem/festers/auth/
 ```sh
 sudo systemctl disable --now festers           # the old uvicorn unit (frees :8000)
 ./run.sh                                        # podman run + generate the systemd user unit + enable
-curl -fsS http://127.0.0.1:8000/healthz         # {"status":"ok","events":...}
+curl -fsS http://172.20.0.1:8000/healthz        # FESTERS_BIND_HOST:8000 -> {"status":"ok","events":...}
 ```
 
 `run.sh` mirrors signal: rootless container + `podman generate systemd --new`
@@ -50,14 +54,16 @@ unit (`container-festers.service`), enabled with linger so it survives reboot.
 
 ## 4. Caddy
 
-`festers.caddy` is already on the box pointing at `127.0.0.1:8000`, so:
+Caddy is a Docker container (`caddy`) on `caddy-net`; its `/etc/caddy` is
+bind-mounted, so edit on the host and reload in the container. The upstream must
+be `FESTERS_BIND_HOST:8000` (here `172.20.0.1:8000`). Keep `header_up X-Real-IP`
+— the app rate-limits magic-link requests per client IP.
 
 ```sh
-sudo systemctl reload caddy
+sudo cp festers.caddy /etc/caddy/conf.d/festers.caddy   # if not already present/edited
+sudo docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 curl -fsS https://festers.dynamicalsystem.com/healthz
 ```
-
-(If the snippet isn't present: `sudo cp festers.caddy /etc/caddy/conf.d/` first.)
 
 ## 5. Turn on auto-deploy
 

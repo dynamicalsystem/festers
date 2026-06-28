@@ -9,7 +9,12 @@ cd "$(dirname "$0")"
 
 IMAGE="ghcr.io/dynamicalsystem/festers"
 UNIT="container-festers.service"
-HEALTH="http://127.0.0.1:8000/healthz"
+# Health-check the host IP the container is actually published on (must match
+# run.sh's FESTERS_BIND_HOST), not a hardcoded loopback — else a container bound
+# to a non-loopback IP (e.g. a Caddy-bridge gateway) is wrongly marked unhealthy.
+BIND_HOST="$(grep -E '^FESTERS_BIND_HOST=' festers.env 2>/dev/null | cut -d= -f2-)"
+BIND_HOST="${BIND_HOST:-127.0.0.1}"
+HEALTH="http://${BIND_HOST}:8000/healthz"
 FAILED_MARK=".last-failed-digest"      # runtime state; gitignored
 
 command -v podman >/dev/null || { echo "podman not found" >&2; exit 1; }
