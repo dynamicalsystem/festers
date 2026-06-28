@@ -3,7 +3,7 @@
 festers runs on the box exactly like signal does: a **rootless podman
 container** supervised by a **`podman generate systemd --new` user unit**
 (`container-festers.service`). No compose, no NAS — the box has podman 3.4.4,
-systemd, linger, and a host Caddy.
+systemd, linger, and a containerised (Docker) Caddy on `caddy-net`.
 
 ## How it works
 
@@ -17,8 +17,10 @@ on the box:  festers-update.timer (~3 min) ─► update.sh ─► podman pull; 
                                                               └─► roll :latest back + mark bad build
 ```
 
-- Container is **loopback-published** (`127.0.0.1:8000`); the host **Caddy** is
-  the public entrypoint (`festers.caddy`).
+- Container is published on **`FESTERS_BIND_HOST:8000`** (loopback by default).
+  On this box Caddy is a *container* and can't reach the host loopback, so
+  `FESTERS_BIND_HOST=172.20.0.1` (the `caddy-net` gateway); **Caddy** is the
+  public entrypoint (`festers.caddy`). `update.sh` health-checks the same host.
 - `data/schedule.json` is baked into the image; `data/plans` + `data/auth` are
   host volumes under `~/.local/state/dynamicalsystem/festers/`.
 - Secrets live in `festers.env` on the box (gitignored), never in the repo.
@@ -29,8 +31,8 @@ on the box:  festers-update.timer (~3 min) ─► update.sh ─► podman pull; 
 |---|---|
 | `run.sh` | one-time setup: `podman run` + `podman generate systemd` the unit |
 | `update.sh` | pull + restart unit + health-check + rollback (the deploy mechanic) |
-| `festers.env.example` | the `FESTERS_*` vars the app reads |
-| `festers.caddy` | host Caddy reverse-proxy snippet |
+| `festers.env.example` | the `FESTERS_*` vars the app reads, + the deploy-only `FESTERS_BIND_HOST` |
+| `festers.caddy` | Caddy reverse-proxy snippet (upstream = `FESTERS_BIND_HOST:8000`) |
 | `systemd/festers-update.{service,timer}` | the auto-deploy timer that runs `update.sh` |
 
 ## First deploy
