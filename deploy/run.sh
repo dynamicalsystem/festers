@@ -18,8 +18,12 @@ mkdir -p "$STATE/plans" "$STATE/auth" "$UNIT_DIR"
 podman pull "$IMAGE"
 
 # (Re)create the container — this is the template the unit is generated from.
+# --network signal-net: lets festers reach the shared Signal API by DNS name
+# `signal:8080` (see deploy/README + signal's service-integration.md). The
+# network is created by signal's setup; this only joins it.
 podman rm -f festers 2>/dev/null || true
 podman run -d --name festers \
+  --network signal-net \
   -p 127.0.0.1:8000:8000 \
   --env-file "$ENVFILE" \
   -e FESTERS_PLANS_DIR=/app/data/plans -e FESTERS_AUTH_DIR=/app/data/auth \

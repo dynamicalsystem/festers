@@ -25,9 +25,10 @@ $EDITOR festers.env
 - [ ] **Reuse the live `FESTERS_SECRET`** from the old service, or every existing
       plan id / magic link breaks. (Find it in the old unit's env /
       `~/festers`.)
-- [ ] Set `FESTERS_BASE_URL` and the notifier vars. For Signal, remember festers
-      is now a **container** — `127.0.0.1` is the container's loopback, not the
-      host; use `host.containers.internal:8010` or signal's podman network.
+- [ ] Set `FESTERS_BASE_URL` and the notifier vars. For Signal:
+      `FESTERS_SIGNAL_URL=http://signal:8080` and `FESTERS_SIGNAL_FROM=+447377115354`
+      (gigbot) — `run.sh` joins `signal-net` so the name resolves. Confirm the
+      `signal-net` network exists (`podman network ls`) before `run.sh`.
 
 ```sh
 # carry over existing wishlists + tokens
