@@ -1,5 +1,5 @@
 # Rootless user unit: pull + deploy the latest festers image once.
-# Driven by festers-update.timer. Assumes the repo is cloned at ~/festers
+# Driven by festers-update.timer. Assumes the repo is cloned at ~/festers-app
 # (adjust ExecStart if it lives elsewhere).
 #
 #   cp deploy/systemd/festers-update.* ~/.config/systemd/user/
@@ -13,4 +13,4 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=%h/festers/deploy/update.sh
+ExecStart=%h/festers-app/deploy/update.sh
