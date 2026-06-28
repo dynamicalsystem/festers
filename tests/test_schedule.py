@@ -44,6 +44,36 @@ def test_real_schedule_end_after_start_when_present(real_schedule: Schedule):
             assert e.end_utc > e.start_utc, f"{e.id} ends before it starts"
 
 
+def test_room_is_optional_and_defaults_none():
+    e = Event(id="x", name="ok", venue="A1", type="gig",
+              start_utc="2026-06-26T19:00:00+01:00")
+    assert e.room is None
+
+
+def test_real_schedule_rooms_distinguish_within_a_venue(real_schedule: Schedule):
+    # The whole point: two Winter Gardens events in different rooms must be
+    # tellable apart. Kali Malone is in the Opera House; Crown is in Olympia Hall.
+    by_id = {e.id: e for e in real_schedule.events}
+    assert by_id["e051"].venue == by_id["e054"].venue == "WG"
+    assert by_id["e051"].room == "Opera House"
+    assert by_id["e054"].room == "Olympia Hall"
+    assert by_id["e051"].room != by_id["e054"].room
+
+
+def test_real_schedule_room_is_absent_where_the_venue_has_one_space(real_schedule: Schedule):
+    # Single-room venues carry no room; the field stays optional.
+    assert real_schedule.event("e003").room is None  # North Pier
+
+
+def test_real_schedule_pleasure_beach_name_prefix_hack_is_gone(real_schedule: Schedule):
+    # Rooms used to be smuggled into the event name as a "[FLR..]" prefix.
+    # That hack must be retired in favour of the room field.
+    for e in real_schedule.events:
+        assert not e.name.startswith("[FLR"), f"{e.id} still prefixes its name"
+    pb = [e for e in real_schedule.events if e.venue == "PB"]
+    assert pb and all(e.room for e in pb), "every Pleasure Beach event needs its floor"
+
+
 def test_indexes(tiny_schedule: Schedule):
     assert tiny_schedule.event("e1").name == "Early Set"
     assert tiny_schedule.venue("A1").name == "Alpha Hall"

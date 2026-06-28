@@ -74,6 +74,7 @@
             {% endif %}
             <span class="time">{{ ev.time }}</span>
             <span class="title">{{ ev.title }}</span>
+            {% if ev.room %}<span class="room">{{ ev.room }}</span>{% endif %}
             {% if ev.collection %}<span class="group">{{ ev.collection }}</span>{% endif %}
             <span class="eid">{{ ev.id }}</span>
           </label>

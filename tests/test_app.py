@@ -88,6 +88,21 @@ def test_public_browse_lists_all_events_without_checkboxes(client):
     assert 'type="checkbox"' not in html  # can't edit without a link
 
 
+def test_browse_shows_room_within_a_venue(client):
+    # So you know which Winter Gardens room to walk into, not just the building.
+    html = client.get("/").text
+    assert "Opera House" in html
+    assert "Olympia Hall" in html
+    assert "[FLR" not in html  # the old name-prefix hack is gone
+
+
+def test_optimise_plan_shows_the_room(client, token):
+    # Want a roomed event; the plan must name the room next to the venue.
+    client.post(f"/p/{token}/toggle", data={"ref": "e051", "kind": "event"})  # Kali Malone, Opera House
+    html = client.get(f"/p/{token}/optimise").text
+    assert "Opera House" in html
+
+
 def test_browse_shows_three_festival_days(client):
     html = client.get("/").text
     for label in ("2026-06-26", "2026-06-27", "2026-06-28"):

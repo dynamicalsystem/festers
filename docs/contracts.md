@@ -17,6 +17,10 @@ against the source PDF (see `docs/reconciliation.md`). Frozen shape:
 - `events[]`: each event (his flat model: name/venue/time/type/collection)
   - `id` - stable string id (`e001`...). The unit a want can point at.
   - `name`, `venue` (code), `collection` (nullable key into `collections[]`).
+  - `room` - **optional** space within the venue (e.g. `"Opera House"`,
+    `"Olympia Hall"`). Free text, nullable; absent for single-room venues. A
+    display/wayfinding cue only - it does not affect travel or conflict logic
+    (same venue means no travel between rooms).
   - `type` - one of `gig | film | exhibition | talk | workshop`. **`exhibition`**
     is a come-anytime drop-in: its `end_utc` is a real span, and consumers place a
     short visit inside it rather than blocking the whole span.

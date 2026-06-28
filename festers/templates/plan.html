@@ -18,7 +18,7 @@
     <li class="attend-item">
       <span class="time">{{ e.time }}</span>
       <span class="title">{{ e.title }}</span>
-      <span class="venue">{{ e.venue }}</span>
+      <span class="venue">{{ e.venue }}{% if e.room %} · {{ e.room }}{% endif %}</span>
       {% if e.weight and e.weight != 1 %}<span class="wt">★{{ e.weight }}</span>{% endif %}
     </li>
     {% endfor %}

@@ -66,6 +66,7 @@ class Event(BaseModel):
     id: str
     name: str
     venue: str  # venue code
+    room: Optional[str] = None  # space within the venue (e.g. "Opera House"); not all venues have rooms
     type: str  # gig | film | exhibition | talk | workshop
     collection: Optional[str] = None  # key into collections[]
     start_utc: datetime
