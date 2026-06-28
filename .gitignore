@@ -9,6 +9,8 @@ venv/
 .env
 # on-box deploy secrets - never commit (only the .example is tracked)
 deploy/festers.env
+# on-box runtime marker written by update.sh
+deploy/.last-failed-digest
 # OCI credentials - never commit
 .oci/
 
