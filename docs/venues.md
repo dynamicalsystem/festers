@@ -28,6 +28,24 @@ geocode cleanly; *(landmark)* addresses are the well-known sites (name-search
 resolves, address listed for completeness). Each venue will carry a `maps_url`
 (`https://maps.apple.com/?q=<address>`) so people can tap through to navigate.
 
+## Rooms within a venue
+
+Some venues are a single building with several performance spaces, and the source
+PDF lists which room each event is in. Getting to the right building but the wrong
+room is a real way to miss something, so the room rides on each **event** as an
+optional `room` field (see Contract A) - not as a venue sub-structure. Venues with
+rooms in the data:
+
+- **Winter Gardens (WG)** - Opera House, Olympia Hall, Olympia Hall Balcony,
+  Derham Lounge, Atrium.
+- **Blackpool Tower (BT)** - Ballroom (early) and 5th Floor (late).
+- **The Pleasure Beach (PB)** - FLR 1 / Paradise, FLR 2 / Horseshoe,
+  FLR 3 / The White Tower (the closing ceremony runs across all three).
+- **The Grand Theatre (GT)** - Studio. **The Albert Hotel (AH)** - Pub.
+
+Single-room venues simply omit the field. Rooms are a display/wayfinding cue; they
+do not affect travel (no walking between rooms of one building).
+
 ## Geography (from the map, approximate)
 
 The map is a single promenade axis running north-south along the seafront:

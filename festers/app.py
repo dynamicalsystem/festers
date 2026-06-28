@@ -121,6 +121,7 @@ def _build_days(schedule: Schedule, wanted_refs: set[str]) -> list[dict]:
                             "id": e.id,
                             "title": e.name,
                             "time": _fmt_time(e),
+                            "room": e.room,
                             "collection": e.collection,
                         }
                         for e in evs
@@ -227,6 +228,7 @@ def _plan_view(schedule: Schedule, result) -> dict:
                 "title": att.event.name,
                 "time": _fmt_time(att.event),
                 "venue": schedule.venue(att.event.venue).name,
+                "room": att.event.room,
                 "weight": att.want.weight,
             }
         )
