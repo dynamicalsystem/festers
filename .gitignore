@@ -7,6 +7,8 @@ venv/
 
 # local env / secrets
 .env
+# on-box deploy secrets - never commit (only the .example is tracked)
+deploy/festers.env
 # OCI credentials - never commit
 .oci/
 

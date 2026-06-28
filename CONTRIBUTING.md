@@ -48,13 +48,14 @@ gh pr create --fill        # or open the PR in the GitHub UI
 ```
 
 Then: CI runs the test suite on your PR. A maintainer reviews and merges. Merging
-to `main` deploys automatically (see `docs/deploy.md`). Delete the branch after.
+to `main` builds and publishes the container image; a maintainer rolls it out to
+the box (see `deploy/README.md`). Delete the branch after.
 
 ## House rules that will get a PR bounced
 
-- **No secrets, ever.** `.oci/`, `.env`, tokens, keys. They're gitignored - keep
-  it that way. Hosting/IaC is **not** in this repo; it's in a separate private
-  ops repo.
+- **No secrets, ever.** `.oci/`, `.env`, `deploy/festers.env`, tokens, keys.
+  They're gitignored - keep it that way. The deploy config in `deploy/` is
+  secret-free by design; real secrets live only on the box.
 - **UTC is canonical.** All time arithmetic uses `start_utc`/`end_utc`. The
   `*_local` fields are display-only - never compute on them or trust the device
   clock. (See `docs/design.md`.)

@@ -6,7 +6,7 @@
 
 - [ ] Branched off latest `main`; branch is short-lived and single-purpose.
 - [ ] `uv run pytest -q` passes locally.
-- [ ] Touches app code only (no secrets, no `.oci/`, no hosting/IaC - that lives in the private ops repo).
+- [ ] No secrets (no `.oci/`, no `.env`, no `deploy/festers.env`). The `deploy/` config is secret-free; real values live on the box.
 - [ ] If it changes behaviour during the live festival, it's small and reversible.
 
 ## Notes for the reviewer
