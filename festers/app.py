@@ -321,6 +321,12 @@ def create_app(
         )
 
     # ----- public: schedule JSON + read-only browse + the request form -----
+    @app.get("/healthz")
+    def healthz() -> JSONResponse:
+        # Readiness probe for the deploy health-check: 200 only if the schedule
+        # actually loaded (create_app fails fast, so reaching here means it did).
+        return JSONResponse({"status": "ok", "events": len(schedule.events)})
+
     @app.get("/api/schedule")
     def api_schedule() -> JSONResponse:
         return JSONResponse(schedule.model_dump(mode="json"))

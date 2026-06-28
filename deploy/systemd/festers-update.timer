@@ -1,0 +1,13 @@
+# Check GHCR for a new festers image every few minutes. Since :latest only
+# moves on a green merge and update.sh no-ops when unchanged + rolls back on
+# failure, this is safe to leave running unattended.
+[Unit]
+Description=Check for a new festers image periodically
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=3min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

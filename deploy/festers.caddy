@@ -1,0 +1,7 @@
+# festers reverse-proxy snippet for the host Caddy.
+# Drop into the box's Caddy config (e.g. /etc/caddy/conf.d/festers.caddy if the
+# box auto-imports conf.d, or paste into the Caddyfile) and reload Caddy.
+# Caddy runs on the host, so it reaches the loopback-bound container directly.
+festers.dynamicalsystem.com {
+	reverse_proxy 127.0.0.1:8000
+}
