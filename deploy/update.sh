@@ -10,9 +10,11 @@ cd "$(dirname "$0")"
 
 [[ -f festers.env ]] || { echo "missing deploy/festers.env (cp festers.env.example festers.env)" >&2; exit 1; }
 
-# Pick a container runtime + compose front-end that exist.
+# Pick a container runtime + compose front-end that exist. podman-compose (the
+# standalone tool on podman 3.x, as used for signal on the box) is included.
 if docker compose version >/dev/null 2>&1; then CLI=docker; COMPOSE=(docker compose)
 elif podman compose version >/dev/null 2>&1; then CLI=podman; COMPOSE=(podman compose)
+elif command -v podman-compose >/dev/null 2>&1; then CLI=podman; COMPOSE=(podman-compose)
 elif command -v docker-compose >/dev/null 2>&1; then CLI=docker; COMPOSE=(docker-compose)
 else echo "no docker/podman compose found" >&2; exit 1; fi
 
@@ -22,8 +24,10 @@ IMAGE="ghcr.io/dynamicalsystem/festers"
 FAILED_MARK=".last-failed-digest"      # runtime state; gitignored
 
 img_id() { $CLI image inspect "$1" --format '{{.Id}}' 2>/dev/null || true; }
+# Inspect via the runtime directly (by container_name), not the compose wrapper:
+# podman-compose's `ps -q` is unreliable across versions.
 running_id() {
-  local cid; cid="$("${COMPOSE[@]}" ps -q festers 2>/dev/null | head -1)"
+  local cid; cid="$($CLI ps -aq --filter "name=^festers$" 2>/dev/null | head -1)"
   [[ -n "$cid" ]] && $CLI inspect "$cid" --format '{{.Image}}' 2>/dev/null || true
 }
 
