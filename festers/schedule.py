@@ -19,7 +19,10 @@ from itertools import combinations
 
 from pydantic import BaseModel, field_validator, model_validator
 
-DEFAULT_SCHEDULE_PATH = Path(__file__).resolve().parent.parent / "data" / "schedule.json"
+DEFAULT_SCHEDULE_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data" / "festivals" / "blacklight" / "schedule.json"
+)
 
 
 def _ensure_utc(value: Optional[datetime]) -> Optional[datetime]:

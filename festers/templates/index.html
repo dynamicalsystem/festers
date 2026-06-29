@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}festivals — festers{% endblock %}
+{% block content %}
+<h2>Festivals</h2>
+<p class="hint">Pick a festival to browse its programme and build a plan.</p>
+{% if not festivals %}
+<p class="err">No festivals are configured yet.</p>
+{% else %}
+<ul class="festival-list">
+  {% for f in festivals %}
+  <li class="festival-card">
+    <a href="/f/{{ f.id }}/">
+      <span class="festival-name">{{ f.name }}</span>
+      {% if f.subtitle %}<span class="festival-sub">{{ f.subtitle }}</span>{% endif %}
+      <span class="festival-meta">
+        {% if f.location %}{{ f.location }} · {% endif %}
+        {{ f.dates[0] }}{% if f.dates|length > 1 %} – {{ f.dates[-1] }}{% endif %}
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

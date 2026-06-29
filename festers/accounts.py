@@ -95,14 +95,19 @@ class TokenStore:
         tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
         tmp.replace(self.path)
 
-    def mint(self, plan_id: str) -> str:
+    def mint(self, plan_id: str, festival_id: str) -> str:
         """Rotate: drop any existing tokens for this plan, mint and store a new
-        one, and return it. So only the latest emailed link stays live."""
+        one, and return it. So only the latest emailed link stays live.
+
+        The token record carries its ``festival_id`` so the plan editor can map a
+        token straight to its festival (the plan URL stays ``/p/<token>``, with no
+        festival in the path)."""
         data = self._load()
         data = {t: rec for t, rec in data.items() if rec.get("plan_id") != plan_id}
         token = uuid.uuid4().hex
         data[token] = {
             "plan_id": plan_id,
+            "festival_id": festival_id,
             "verified": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -113,6 +118,14 @@ class TokenStore:
         """The plan id a token grants access to, or None if unknown."""
         rec = self._load().get(token)
         return rec["plan_id"] if rec else None
+
+    def festival_of(self, token: str) -> str | None:
+        """The festival id a token belongs to, or None if unknown/legacy.
+
+        Tokens minted before festivals were namespaced have no ``festival_id``;
+        they resolve to None and the editor treats the link as expired (re-mint)."""
+        rec = self._load().get(token)
+        return rec.get("festival_id") if rec else None
 
     def verify(self, token: str) -> str | None:
         """Mark a token verified (the link was clicked) and return its plan id."""

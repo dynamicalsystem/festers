@@ -76,8 +76,9 @@ def test_email_validation_rejects(bad):
 def test_mint_resolve_verify_roundtrip(tmp_path):
     store = TokenStore(tmp_path)
     pid = "plan123"
-    token = store.mint(pid)
+    token = store.mint(pid, "blacklight")
     assert store.resolve(token) == pid
+    assert store.festival_of(token) == "blacklight"  # token carries its festival
     assert store.is_verified(token) is False
     assert store.verify(token) == pid
     assert store.is_verified(token) is True
@@ -86,8 +87,8 @@ def test_mint_resolve_verify_roundtrip(tmp_path):
 def test_mint_rotates_old_tokens_for_same_plan(tmp_path):
     store = TokenStore(tmp_path)
     pid = "planX"
-    t1 = store.mint(pid)
-    t2 = store.mint(pid)  # rotation: t1 should die
+    t1 = store.mint(pid, "blacklight")
+    t2 = store.mint(pid, "blacklight")  # rotation: t1 should die
     assert t1 != t2
     assert store.resolve(t1) is None
     assert store.resolve(t2) == pid
@@ -95,14 +96,15 @@ def test_mint_rotates_old_tokens_for_same_plan(tmp_path):
 
 def test_mint_does_not_touch_other_plans(tmp_path):
     store = TokenStore(tmp_path)
-    ta = store.mint("planA")
-    tb = store.mint("planB")
-    store.mint("planA")  # rotating A must not drop B
+    ta = store.mint("planA", "blacklight")
+    tb = store.mint("planB", "blacklight")
+    store.mint("planA", "blacklight")  # rotating A must not drop B
     assert store.resolve(tb) == "planB"
 
 
 def test_resolve_unknown_token_is_none(tmp_path):
     assert TokenStore(tmp_path).resolve("nope") is None
+    assert TokenStore(tmp_path).festival_of("nope") is None
 
 
 def test_magic_link_format():

@@ -73,3 +73,16 @@ ul.instances a:hover { text-decoration: underline; }
 .err { color: #c0392b; background: #fdecea; padding: 0.5rem 0.75rem; border-radius: 6px; }
 .maplink { font-size: 0.72rem; font-weight: normal; color: #06c; text-decoration: none; }
 .maplink:hover { text-decoration: underline; }
+
+/* "← all festivals" switcher in the header */
+header .all-fests { display: inline-block; margin-left: 0.5rem; color: #6cf; text-decoration: none; font-size: 0.75rem; }
+header .all-fests:hover { text-decoration: underline; }
+
+/* festival index (the landing page) */
+ul.festival-list { list-style: none; margin: 1rem 0; padding: 0; }
+.festival-card { border: 1px solid #e2e2e2; border-radius: 8px; margin: 0.6rem 0; background: #fff; }
+.festival-card a { display: block; padding: 0.8rem 1rem; text-decoration: none; color: inherit; }
+.festival-card a:hover { background: #f4f8ff; }
+.festival-name { display: block; font-size: 1.05rem; font-weight: 600; color: #111; }
+.festival-sub { display: block; font-size: 0.85rem; color: #555; margin-top: 0.1rem; }
+.festival-meta { display: block; font-size: 0.75rem; color: #999; margin-top: 0.25rem; }
