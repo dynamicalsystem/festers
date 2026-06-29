@@ -34,7 +34,7 @@ from festers.notify import Notifier, make_notifier
 from festers.optimiser import plan as build_plan
 from festers.params import OptimiserParams
 from festers.schedule import Event, Schedule, load_schedule
-from festers.travel import travel as travel_fn
+from festers.travel import make_travel
 from festers.wants import Want, Wants, load_wants, save_wants
 
 log = logging.getLogger("festers.app")
@@ -134,8 +134,11 @@ def _build_days(schedule: Schedule, wanted_refs: set[str]) -> list[dict]:
 
 def _travel_for_schedule(schedule: Schedule):
     """Adapt Contract C to the (event-zone, event-zone) callable the conflict
-    detector and optimiser expect: they pass zone strings straight through."""
-    return travel_fn
+    detector and optimiser expect: they pass zone strings straight through.
+
+    The travel matrix now lives in the festival's own data, so this builds the
+    callable from the given schedule rather than a global matrix."""
+    return make_travel(schedule)
 
 
 def _conflict_days(schedule: Schedule, wants: Wants, params: OptimiserParams) -> list[dict]:

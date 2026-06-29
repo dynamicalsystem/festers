@@ -17,6 +17,26 @@
     "notes": "Reconciled against TBL-MAP-WEBSITE-001-02.pdf (see docs/reconciliation.md). UTC canonical; *_local display-only.",
     "schema": 2
   },
+  "travel": {
+    "same_zone_minutes": 5,
+    "pairs": [
+      { "zones": ["central", "central-east"], "minutes": 6 },
+      { "zones": ["central", "central-seafront"], "minutes": 5 },
+      { "zones": ["central", "central-south"], "minutes": 7 },
+      { "zones": ["central-east", "central-seafront"], "minutes": 8 },
+      { "zones": ["central-east", "central-south"], "minutes": 8 },
+      { "zones": ["central-seafront", "central-south"], "minutes": 8 },
+      { "zones": ["north-seafront", "central"], "minutes": 18 },
+      { "zones": ["north-seafront", "central-east"], "minutes": 20 },
+      { "zones": ["north-seafront", "central-seafront"], "minutes": 16 },
+      { "zones": ["north-seafront", "central-south"], "minutes": 22 },
+      { "zones": ["south-seafront", "central"], "minutes": 22 },
+      { "zones": ["south-seafront", "central-east"], "minutes": 24 },
+      { "zones": ["south-seafront", "central-seafront"], "minutes": 20 },
+      { "zones": ["south-seafront", "central-south"], "minutes": 18 },
+      { "zones": ["north-seafront", "south-seafront"], "minutes": 40 }
+    ]
+  },
   "venues": [
     {
       "code": "NP",

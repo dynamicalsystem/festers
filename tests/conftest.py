@@ -7,7 +7,14 @@ from datetime import datetime, timezone
 
 import pytest
 
-from festers.schedule import Event, Festival, Schedule, Venue, load_schedule
+from festers.schedule import (
+    Event,
+    Festival,
+    Schedule,
+    TravelModel,
+    Venue,
+    load_schedule,
+)
 
 
 @pytest.fixture(scope="session")
@@ -46,4 +53,8 @@ def tiny_schedule() -> Schedule:
         Event(id="e5", name="Reel Two", venue="A1", type="film", collection="reels",
               start_utc=_utc(2026, 6, 26, 15, 0), end_utc=_utc(2026, 6, 26, 16, 0)),
     ]
-    return Schedule(festival=festival, venues=venues, events=events)
+    travel = TravelModel(
+        same_zone_minutes=5,
+        pairs=[{"zones": ["central", "south-seafront"], "minutes": 22}],
+    )
+    return Schedule(festival=festival, venues=venues, events=events, travel=travel)
