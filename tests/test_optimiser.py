@@ -9,11 +9,12 @@ not just on the attended set.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from itertools import combinations
 
 import pytest
 
 from festers.params import OptimiserParams
-from festers.schedule import Event, Festival, Schedule, Venue
+from festers.schedule import Event, Festival, Schedule, TravelModel, Venue
 from festers.wants import Want, Wants
 from festers.optimiser import DropReason, plan
 
@@ -30,7 +31,13 @@ def _sched(venues, events):
         timezone="Europe/London",
         utc_offset_during_festival="+01:00",
     )
-    return Schedule(festival=festival, venues=venues, events=events)
+    # A complete (but unused) travel matrix over whatever zones these venues use:
+    # the optimiser tests pass an explicit travel stub to plan(), so only the
+    # load-time completeness check cares about this.
+    zones = sorted({v.zone for v in venues})
+    pairs = [{"zones": [a, b], "minutes": 10} for a, b in combinations(zones, 2)]
+    travel = TravelModel(same_zone_minutes=5, pairs=pairs)
+    return Schedule(festival=festival, venues=venues, events=events, travel=travel)
 
 
 # A zero/flat travel stub: makes overlap tests about TIME only, no travel noise.

@@ -15,7 +15,9 @@ from functools import cached_property
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from itertools import combinations
+
+from pydantic import BaseModel, field_validator, model_validator
 
 DEFAULT_SCHEDULE_PATH = Path(__file__).resolve().parent.parent / "data" / "schedule.json"
 
@@ -62,6 +64,39 @@ class Collection(BaseModel):
     name: str
 
 
+class TravelPair(BaseModel):
+    """Walking/tram minutes between two DISTINCT zones (an unordered pair)."""
+
+    zones: tuple[str, str]
+    minutes: int
+
+
+class TravelModel(BaseModel):
+    """A festival's hand-built zone-to-zone travel matrix (Contract C as data).
+
+    Symmetric by construction: pairs are stored once and looked up by an
+    unordered ``frozenset`` key, so the matrix cannot rot into an asymmetric one.
+    Same-zone hops use ``same_zone_minutes`` (a small positive default - you still
+    walk between venues in a zone), never zero-by-accident.
+    """
+
+    same_zone_minutes: int
+    pairs: list[TravelPair]
+
+    @cached_property
+    def _by_pair(self) -> dict[frozenset[str], int]:
+        return {frozenset(p.zones): p.minutes for p in self.pairs}
+
+    def minutes(self, zone_a: str, zone_b: str) -> int:
+        """Minutes between two zones. Symmetric; same-zone -> the default.
+
+        Raises ``KeyError`` for an uncovered distinct pair (a data gap worth
+        surfacing, not silently defaulting)."""
+        if zone_a == zone_b:
+            return self.same_zone_minutes
+        return self._by_pair[frozenset({zone_a, zone_b})]
+
+
 class Event(BaseModel):
     id: str
     name: str
@@ -85,6 +120,27 @@ class Schedule(BaseModel):
     venues: list[Venue]
     events: list[Event]
     collections: list[Collection] = []
+    travel: TravelModel
+
+    @model_validator(mode="after")
+    def _travel_covers_every_zone_pair(self) -> "Schedule":
+        """Fail fast if the travel matrix is missing any pair of venue zones.
+
+        The optimiser and conflict view treat an uncovered pair as a hard error
+        (``KeyError``); catching it at load time keeps a half-specified festival
+        from ever reaching them."""
+        covered = self.travel._by_pair
+        missing = [
+            sorted(pair)
+            for pair in (frozenset(p) for p in combinations(self.zones, 2))
+            if pair not in covered
+        ]
+        if missing:
+            raise ValueError(
+                f"travel matrix missing zone pairs: {missing} "
+                f"(zones in use: {sorted(self.zones)})"
+            )
+        return self
 
     # --- indexes (built once, O(1) lookups) ---
     @cached_property
