@@ -16,6 +16,8 @@ from festers.accounts import TokenStore, plan_id_for
 from festers.wants import Wants, load_wants, save_wants
 
 PHONE = "+447000000000"
+FEST = "blacklight"
+BASE = f"/f/{FEST}"  # the festival-scoped public browse base
 
 
 class FakeNotifier:
@@ -56,7 +58,7 @@ def plan_id():
 @pytest.fixture
 def token(env):
     """A live token for PHONE's plan (as if the link had been requested)."""
-    return TokenStore(env / "auth").mint(plan_id_for(PHONE, "blacklight"))
+    return TokenStore(env / "auth").mint(plan_id_for(PHONE, FEST), FEST)
 
 
 # --------------------------------------------------------------------------- #
@@ -64,25 +66,39 @@ def token(env):
 # --------------------------------------------------------------------------- #
 
 
+def test_index_lists_festivals_and_links_to_them(client):
+    # The landing page is now a festival index, not a single schedule.
+    html = client.get("/").text
+    assert "The Black Lights" in html
+    assert f'href="/f/{FEST}/"' in html
+    assert 'type="checkbox"' not in html  # no picking from the index
+
+
+def test_unknown_festival_404s(client):
+    assert client.get("/f/no-such-fest/").status_code == 404
+    assert client.get("/f/no-such-fest/api/schedule").status_code == 404
+
+
 def test_schedule_json_endpoint(client):
-    body = client.get("/api/schedule").json()
+    body = client.get(f"{BASE}/api/schedule").json()
     assert len(body["events"]) == 91
     assert len(body["venues"]) == 15
 
 
 def test_healthz_reports_ok_and_event_count(client):
-    # The deploy health-check depends on this: 200 + the loaded event count.
+    # The deploy health-check depends on this: 200 + the loaded counts.
     resp = client.get("/healthz")
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "ok"
-    assert body["events"] == len(client.get("/api/schedule").json()["events"])
+    assert body["festivals"] >= 1
+    assert body["events"] == len(client.get(f"{BASE}/api/schedule").json()["events"])
 
 
 def test_public_browse_lists_all_events_without_checkboxes(client):
     from festers.schedule import load_schedule
 
-    html = client.get("/").text
+    html = client.get(f"{BASE}/").text
     missing = [e.id for e in load_schedule().events if e.id not in html]
     assert missing == []
     assert 'type="checkbox"' not in html  # can't edit without a link
@@ -90,7 +106,7 @@ def test_public_browse_lists_all_events_without_checkboxes(client):
 
 def test_browse_shows_room_within_a_venue(client):
     # So you know which Winter Gardens room to walk into, not just the building.
-    html = client.get("/").text
+    html = client.get(f"{BASE}/").text
     assert "Opera House" in html
     assert "Olympia Hall" in html
     assert "[FLR" not in html  # the old name-prefix hack is gone
@@ -104,10 +120,13 @@ def test_optimise_plan_shows_the_room(client, token):
 
 
 def test_browse_shows_three_festival_days(client):
-    html = client.get("/").text
+    html = client.get(f"{BASE}/").text
     for label in ("2026-06-26", "2026-06-27", "2026-06-28"):
         assert label in html
     assert "2026-06-29" not in html  # folded onto Sunday
+    # generic weekday labels are derived from the dates, not a hardcoded map
+    for weekday in ("Friday", "Saturday", "Sunday"):
+        assert weekday in html
 
 
 # --------------------------------------------------------------------------- #
@@ -116,7 +135,7 @@ def test_browse_shows_three_festival_days(client):
 
 
 def test_request_link_sends_a_link_and_mints_a_token(client, notifier, env):
-    resp = client.post("/request-link", data={"phone": PHONE})
+    resp = client.post(f"{BASE}/request-link", data={"phone": PHONE})
     assert resp.status_code == 200
     assert "check your messages" in resp.text.lower()
     assert len(notifier.sent) == 1
@@ -124,25 +143,27 @@ def test_request_link_sends_a_link_and_mints_a_token(client, notifier, env):
     assert recipient == PHONE
     m = re.search(r"/p/([0-9a-f]+)", message)
     assert m, "message should contain a /p/<token> link"
-    assert TokenStore(env / "auth").resolve(m.group(1)) == plan_id_for(PHONE, "blacklight")
+    store = TokenStore(env / "auth")
+    assert store.resolve(m.group(1)) == plan_id_for(PHONE, FEST)
+    assert store.festival_of(m.group(1)) == FEST  # token carries its festival
 
 
 def test_request_link_rejects_a_bad_number(client, notifier):
-    resp = client.post("/request-link", data={"phone": "not-a-phone"})
+    resp = client.post(f"{BASE}/request-link", data={"phone": "not-a-phone"})
     assert resp.status_code == 400
     assert notifier.sent == []
 
 
 def test_request_link_is_rate_limited_per_ip(client, notifier):
-    first = client.post("/request-link", data={"phone": PHONE})
-    second = client.post("/request-link", data={"phone": "+447111222333"})
+    first = client.post(f"{BASE}/request-link", data={"phone": PHONE})
+    second = client.post(f"{BASE}/request-link", data={"phone": "+447111222333"})
     assert first.status_code == 200
     assert second.status_code == 429
     assert len(notifier.sent) == 1  # the throttled one never sent
 
 
 def test_request_link_does_not_reveal_validity(client, notifier):
-    r = client.post("/request-link", data={"phone": "+15551234567"})
+    r = client.post(f"{BASE}/request-link", data={"phone": "+15551234567"})
     assert "if that number" in r.text.lower()
 
 

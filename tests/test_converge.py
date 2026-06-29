@@ -33,7 +33,7 @@ def client(env):
 
 @pytest.fixture
 def token(env):
-    return TokenStore(env / "auth").mint(plan_id_for(PHONE, "blacklight"))
+    return TokenStore(env / "auth").mint(plan_id_for(PHONE, "blacklight"), "blacklight")
 
 
 def _two_overlapping_event_ids():

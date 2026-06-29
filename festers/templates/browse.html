@@ -4,7 +4,7 @@
 {% if token %}
 <p class="planbar hint">This is <strong>your plan</strong> — bookmark this page; the link is your key to edit it.</p>
 {% else %}
-<form class="planbar" method="post" action="/request-link">
+<form class="planbar" method="post" action="/f/{{ festival.id }}/request-link">
   <label>Your phone number
     <input name="phone" type="tel" inputmode="tel" placeholder="+447700900123" required>
   </label>

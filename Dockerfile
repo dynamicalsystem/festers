@@ -18,8 +18,8 @@ COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
-# Then the app itself. data/schedule.json is the source of truth and is baked
-# in; data/plans + data/auth are runtime state and come from mounted volumes.
+# Then the app itself. data/festivals/<id>/schedule.json files are the source of
+# truth and are baked in; data/plans + data/auth are runtime state from volumes.
 COPY festers ./festers
 COPY data ./data
 RUN --mount=type=cache,target=/root/.cache/uv \

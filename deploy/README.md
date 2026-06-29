@@ -21,8 +21,8 @@ on the box:  festers-update.timer (~3 min) ─► update.sh ─► podman pull; 
   On this box Caddy is a *container* and can't reach the host loopback, so
   `FESTERS_BIND_HOST=172.20.0.1` (the `caddy-net` gateway); **Caddy** is the
   public entrypoint (`festers.caddy`). `update.sh` health-checks the same host.
-- `data/schedule.json` is baked into the image; `data/plans` + `data/auth` are
-  host volumes under `~/.local/state/dynamicalsystem/festers/`.
+- `data/festivals/<id>/schedule.json` files are baked into the image; `data/plans`
+  + `data/auth` are host volumes under `~/.local/state/dynamicalsystem/festers/`.
 - Secrets live in `festers.env` on the box (gitignored), never in the repo.
 
 ## Files

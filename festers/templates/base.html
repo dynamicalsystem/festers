@@ -9,22 +9,27 @@
 <body>
   <header>
     <h1><a href="/">festers</a></h1>
+    {% if festival %}
     <p class="sub">{{ festival.name }}{% if festival.subtitle %} — {{ festival.subtitle }}{% endif %}
-      <span class="tz">times {{ festival.utc_offset_during_festival }} ({{ festival.timezone }})</span></p>
+      <span class="tz">times {{ festival.utc_offset_during_festival }} ({{ festival.timezone }})</span>
+      <a class="all-fests" href="/">all festivals</a></p>
     {% if plan_base %}
     <nav>
-      <a href="/">schedule</a>
+      <a href="/f/{{ festival.id }}/">schedule</a>
       <a href="{{ plan_base }}">your plan</a>
       <a href="{{ plan_base }}/conflicts">conflicts{% if conflict_count %} ({{ conflict_count }}){% endif %}</a>
       <a href="{{ plan_base }}/optimise">optimise</a>
     </nav>
+    {% endif %}
     {% endif %}
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
   <footer>
+    {% if festival %}
     <p>All times are festival local ({{ festival.utc_offset_during_festival }}); your device clock is ignored.</p>
+    {% endif %}
   </footer>
 </body>
 </html>

@@ -30,10 +30,14 @@ The stack is deliberately undecided (see `docs/design.md`).
 ## Layout
 
 ```
-data/      structured festival data (schedule.json is the source of truth)
+data/festivals/<id>/schedule.json   per-festival data (the source of truth)
 docs/      problem statement, data model, venue + travel notes
 ooda/      OODA loops; each loop is a folder with a README (outcomes + tests)
 ```
+
+festers now serves multiple festivals: the landing page lists them and each is
+browsed under `/f/<id>/`. A festival is self-contained data (its venues, travel
+matrix and events) — adding one is dropping a new `data/festivals/<id>/schedule.json`.
 
 ## Source data
 

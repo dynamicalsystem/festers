@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -30,10 +31,11 @@ from festers.accounts import (
     plan_id_for,
 )
 from festers.conflicts import find_conflicts, session_day
+from festers.festivals import FestivalRegistry, load_registry
 from festers.notify import Notifier, make_notifier
 from festers.optimiser import plan as build_plan
 from festers.params import OptimiserParams
-from festers.schedule import Event, Schedule, load_schedule
+from festers.schedule import Event, Schedule
 from festers.travel import make_travel
 from festers.wants import Want, Wants, load_wants, save_wants
 
@@ -51,17 +53,17 @@ _HERE = Path(__file__).resolve().parent
 _TEMPLATES_DIR = _HERE / "templates"
 _STATIC_DIR = _HERE / "static"
 
-# Human labels for the three festival nights (and the defensive map keeps any
-# after-midnight events folded onto the correct night via ``session_day``).
-_DAY_LABELS = {
-    "2026-06-26": "Friday",
-    "2026-06-27": "Saturday",
-    "2026-06-28": "Sunday",
-}
-
-
 def _day_label(date_str: str) -> str:
-    return _DAY_LABELS.get(date_str, date_str)
+    """Weekday name for a ``YYYY-MM-DD`` session day, e.g. "Saturday".
+
+    Derived generically so any festival's dates get labels for free (no hardcoded
+    per-festival map). Events are already folded onto the right session day by
+    ``session_day``; this just names it. Falls back to the raw string if it is not
+    a parseable date."""
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").strftime("%A")
+    except ValueError:
+        return date_str
 
 
 def _plans_dir() -> Path:
@@ -273,16 +275,19 @@ def _plan_view(schedule: Schedule, result) -> dict:
 
 
 def create_app(
-    schedule: Optional[Schedule] = None,
+    registry: Optional[FestivalRegistry] = None,
     notifier: Optional[Notifier] = None,
 ) -> FastAPI:
-    """Build the app. Loads + validates the schedule once (fail fast).
+    """Build the app. Loads + validates every festival once (fail fast).
 
+    Festivals are served under ``/f/<id>/``; the landing ``/`` lists them.
     Identity is a magic link: a phone number is submitted, a link to a rotating
     token is sent over the configured channel, and the token grants edit access
-    to that number's plan. The number is never stored (see festers.accounts).
+    to that number's plan for that festival. The number is never stored (see
+    festers.accounts); the token record carries the festival id, so the plan URL
+    stays ``/p/<token>``.
     """
-    schedule = schedule or load_schedule()
+    registry = registry or load_registry()
     notifier = notifier or make_notifier()
     params = OptimiserParams()
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
@@ -291,57 +296,81 @@ def create_app(
 
     app = FastAPI(title="festers", summary="festival attendance picker")
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
-    app.state.schedule = schedule
+    app.state.registry = registry
+
+    def _festival_or_404(festival_id: str) -> Schedule:
+        schedule = registry.get(festival_id)
+        if schedule is None:
+            raise HTTPException(status_code=404, detail="unknown festival")
+        return schedule
 
     def _wants_for(plan_id: str) -> Wants:
         return load_wants(plan_id, base_dir=_plans_dir())
 
-    def _conflict_count(plan_id: str) -> int:
+    def _conflict_count(schedule: Schedule, plan_id: str) -> int:
         try:
             return len(find_conflicts(schedule, _wants_for(plan_id), params,
                                       travel=_travel_for_schedule(schedule)))
         except Exception:
             return 0
 
-    def _plan_id_or_404(token: str) -> str:
-        plan_id = tokens.resolve(token)
-        if plan_id is None:
+    def _plan_ctx(token: str, *, verify: bool = False) -> tuple[str, Schedule]:
+        """Resolve a token to its (plan_id, schedule), or 404 if the token is
+        unknown/legacy or its festival no longer exists. ``verify=True`` also
+        marks the token verified (the link has been clicked)."""
+        plan_id = tokens.verify(token) if verify else tokens.resolve(token)
+        schedule = registry.get(tokens.festival_of(token))
+        if plan_id is None or schedule is None:
             raise HTTPException(status_code=404, detail="invalid or expired link")
-        return plan_id
+        return plan_id, schedule
 
-    def _landing(request: Request, error: str = "", status: int = 200) -> HTMLResponse:
+    def _browse_context(schedule: Schedule, token: Optional[str],
+                        wanted: set[str]) -> dict:
+        return {
+            "festival": schedule.festival,
+            "days": _build_days(schedule, wanted),
+            "groups": _build_collections(schedule, wanted),
+            "token": token,
+            "plan_base": f"/p/{token}" if token else None,
+            "wanted_refs": wanted,
+        }
+
+    def _landing(request: Request, schedule: Schedule, error: str = "",
+                 status: int = 200) -> HTMLResponse:
         return templates.TemplateResponse(
             request,
             "browse.html",
-            {
-                "festival": schedule.festival,
-                "days": _build_days(schedule, set()),
-                "groups": _build_collections(schedule, set()),
-                "token": None,
-                "plan_base": None,
-                "wanted_refs": set(),
-                "error": error,
-            },
+            {**_browse_context(schedule, None, set()), "error": error},
             status_code=status,
         )
 
-    # ----- public: schedule JSON + read-only browse + the request form -----
+    # ----- public: festival index, per-festival browse + JSON + request form -----
     @app.get("/healthz")
     def healthz() -> JSONResponse:
-        # Readiness probe for the deploy health-check: 200 only if the schedule
+        # Readiness probe for the deploy health-check: 200 only if the registry
         # actually loaded (create_app fails fast, so reaching here means it did).
-        return JSONResponse({"status": "ok", "events": len(schedule.events)})
-
-    @app.get("/api/schedule")
-    def api_schedule() -> JSONResponse:
-        return JSONResponse(schedule.model_dump(mode="json"))
+        events = sum(len(s.events) for s in registry.all())
+        return JSONResponse({"status": "ok", "festivals": len(registry), "events": events})
 
     @app.get("/", response_class=HTMLResponse)
-    def landing(request: Request) -> HTMLResponse:
-        return _landing(request)
+    def index(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {"festivals": [s.festival for s in registry.all()]},
+        )
 
-    @app.post("/request-link", response_class=HTMLResponse)
-    def request_link(request: Request, phone: str = Form(...)):
+    @app.get("/f/{festival_id}/", response_class=HTMLResponse)
+    def landing(request: Request, festival_id: str) -> HTMLResponse:
+        return _landing(request, _festival_or_404(festival_id))
+
+    @app.get("/f/{festival_id}/api/schedule")
+    def api_schedule(festival_id: str) -> JSONResponse:
+        return JSONResponse(_festival_or_404(festival_id).model_dump(mode="json"))
+
+    @app.post("/f/{festival_id}/request-link", response_class=HTMLResponse)
+    def request_link(request: Request, festival_id: str, phone: str = Form(...)):
+        schedule = _festival_or_404(festival_id)
         # Per-IP cooldown so nobody can spam links (incl. to strangers' numbers).
         ip = request.client.host if request.client else "?"
         now = time.monotonic()
@@ -354,13 +383,14 @@ def create_app(
             )
         if not is_valid_phone(phone):
             return _landing(
-                request,
+                request, schedule,
                 error="Enter a phone number in international format, e.g. +447700900123.",
                 status=400,
             )
         last_request[ip] = now
         number = normalize_phone(phone)
-        token = tokens.mint(plan_id_for(number, festival_id=schedule.festival.id))
+        token = tokens.mint(plan_id_for(number, festival_id=schedule.festival.id),
+                            schedule.festival.id)
         link = magic_link(_base_url(), token)
         try:
             notifier.send(
@@ -376,27 +406,22 @@ def create_app(
              "message": "If that number can receive messages, we've sent a link to build your plan."},
         )
 
-    # ----- token-gated plan editor (the link target) -----
+    # ----- token-gated plan editor (the link target; festival is in the token) -----
     @app.get("/p/{token}", response_class=HTMLResponse)
     def plan_editor(request: Request, token: str) -> HTMLResponse:
-        plan_id = tokens.verify(token)  # clicking the link confirms the channel
-        if plan_id is None:
+        try:
+            plan_id, schedule = _plan_ctx(token, verify=True)
+        except HTTPException:
             return templates.TemplateResponse(
-                request, "link_invalid.html",
-                {"festival": schedule.festival}, status_code=404,
+                request, "link_invalid.html", {"festival": None}, status_code=404,
             )
         wanted = _wants_for(plan_id).refs()
         return templates.TemplateResponse(
             request,
             "browse.html",
             {
-                "festival": schedule.festival,
-                "days": _build_days(schedule, wanted),
-                "groups": _build_collections(schedule, wanted),
-                "token": token,
-                "plan_base": f"/p/{token}",
-                "wanted_refs": wanted,
-                "conflict_count": _conflict_count(plan_id),
+                **_browse_context(schedule, token, wanted),
+                "conflict_count": _conflict_count(schedule, plan_id),
             },
         )
 
@@ -408,7 +433,7 @@ def create_app(
         kind: str = Form(...),
         next: str = "",
     ):
-        plan_id = _plan_id_or_404(token)
+        plan_id, schedule = _plan_ctx(token)
         if kind not in ("event", "collection"):
             raise HTTPException(status_code=400, detail="kind must be event or collection")
         _validate_ref(schedule, ref, kind)
@@ -426,7 +451,7 @@ def create_app(
 
     @app.get("/p/{token}/conflicts", response_class=HTMLResponse)
     def conflicts_view(request: Request, token: str) -> HTMLResponse:
-        plan_id = _plan_id_or_404(token)
+        plan_id, schedule = _plan_ctx(token)
         conflict_days = _conflict_days(schedule, _wants_for(plan_id), params)
         return templates.TemplateResponse(
             request,
@@ -442,7 +467,7 @@ def create_app(
 
     @app.get("/p/{token}/optimise", response_class=HTMLResponse)
     def optimise_view(request: Request, token: str) -> HTMLResponse:
-        plan_id = _plan_id_or_404(token)
+        plan_id, schedule = _plan_ctx(token)
         result = build_plan(schedule, _wants_for(plan_id), _travel_for_schedule(schedule), params)
         return templates.TemplateResponse(
             request,
@@ -450,7 +475,7 @@ def create_app(
             {
                 "festival": schedule.festival,
                 "plan_base": f"/p/{token}",
-                "conflict_count": _conflict_count(plan_id),
+                "conflict_count": _conflict_count(schedule, plan_id),
                 **_plan_view(schedule, result),
             },
         )
