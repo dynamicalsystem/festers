@@ -314,12 +314,28 @@ def create_app(
         except Exception:
             return 0
 
+    def _default_festival_id() -> Optional[str]:
+        """The festival a festival-less (legacy) token belongs to.
+
+        Tokens minted before festivals were namespaced carry no ``festival_id``,
+        but they can only be from the original single festival. Fall back to
+        ``FESTERS_DEFAULT_FESTIVAL`` if set, else the sole/earliest festival, so
+        those old magic links keep working (and the picks behind them stay
+        reachable - the token record still holds the original plan id)."""
+        env = os.environ.get("FESTERS_DEFAULT_FESTIVAL")
+        if env:
+            return env
+        ids = registry.ids()
+        return ids[0] if ids else None
+
     def _plan_ctx(token: str, *, verify: bool = False) -> tuple[str, Schedule]:
         """Resolve a token to its (plan_id, schedule), or 404 if the token is
-        unknown/legacy or its festival no longer exists. ``verify=True`` also
+        unknown or its festival no longer exists. A legacy token without a
+        ``festival_id`` falls back to the default festival. ``verify=True`` also
         marks the token verified (the link has been clicked)."""
         plan_id = tokens.verify(token) if verify else tokens.resolve(token)
-        schedule = registry.get(tokens.festival_of(token))
+        festival_id = tokens.festival_of(token) or _default_festival_id()
+        schedule = registry.get(festival_id)
         if plan_id is None or schedule is None:
             raise HTTPException(status_code=404, detail="invalid or expired link")
         return plan_id, schedule

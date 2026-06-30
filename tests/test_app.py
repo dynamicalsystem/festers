@@ -12,8 +12,10 @@ import re
 import pytest
 from fastapi.testclient import TestClient
 
+import json
+
 from festers.accounts import TokenStore, plan_id_for
-from festers.wants import Wants, load_wants, save_wants
+from festers.wants import Want, Wants, load_wants, save_wants
 
 PHONE = "+447000000000"
 FEST = "blacklight"
@@ -182,6 +184,28 @@ def test_invalid_token_shows_link_invalid_404(client):
     resp = client.get("/p/deadbeef")
     assert resp.status_code == 404
     assert "isn't valid" in resp.text
+
+
+def test_legacy_token_without_festival_still_resolves(client, env, plan_id):
+    # Regression: tokens minted before festivals were namespaced have no
+    # festival_id on their record. They must still open (falling back to the
+    # default festival) so old magic links - and the picks behind them - survive.
+    save_wants(
+        Wants(plan_name=plan_id, wants=[Want(ref="e042", kind="event")]),
+        base_dir=env / "plans",
+    )
+    store = TokenStore(env / "auth")
+    tok = store.mint(plan_id, FEST)
+    path = env / "auth" / "tokens.json"
+    data = json.loads(path.read_text())
+    del data[tok]["festival_id"]  # simulate a pre-multi-festival token
+    path.write_text(json.dumps(data))
+    assert store.festival_of(tok) is None  # genuinely festival-less
+
+    resp = client.get(f"/p/{tok}")
+    assert resp.status_code == 200  # resolves, no longer a 404
+    assert 'type="checkbox"' in resp.text  # the editor, not the invalid-link page
+    assert "checked" in resp.text  # the previously-picked want is preserved
 
 
 def test_toggle_persists_for_the_token_plan(client, token, env, plan_id):
