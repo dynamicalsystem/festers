@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Form, HTTPException, Request, Response
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -335,6 +335,19 @@ def create_app(
             "wanted_refs": wanted,
         }
 
+    def _workspace_context(token: str, plan_id: str, schedule: Schedule) -> dict:
+        """Live state for the in-page workspace: the pick + conflict counts and a
+        freshly-optimised agenda. Shared by the full editor page and the fragment
+        returned to the toggle fetch, so the two never drift."""
+        wants = _wants_for(plan_id)
+        result = build_plan(schedule, wants, _travel_for_schedule(schedule), params)
+        return {
+            "plan_base": f"/p/{token}",
+            "picked_count": len(wants.wants),
+            "conflict_count": _conflict_count(schedule, plan_id),
+            **_plan_view(schedule, result),
+        }
+
     def _landing(request: Request, schedule: Schedule, error: str = "",
                  status: int = 200) -> HTMLResponse:
         return templates.TemplateResponse(
@@ -421,7 +434,7 @@ def create_app(
             "browse.html",
             {
                 **_browse_context(schedule, token, wanted),
-                "conflict_count": _conflict_count(schedule, plan_id),
+                **_workspace_context(token, plan_id, schedule),
             },
         )
 
@@ -446,7 +459,12 @@ def create_app(
         save_wants(wants, base_dir=_plans_dir())
 
         if request.headers.get("x-requested-with") == "fetch":
-            return Response(status_code=204)
+            # Return the refreshed workspace fragment for the client to swap in -
+            # live pick/conflict counts and the re-optimised agenda, no reload.
+            return templates.TemplateResponse(
+                request, "_workspace.html",
+                _workspace_context(token, plan_id, schedule),
+            )
         return RedirectResponse(next or f"/p/{token}", status_code=303)
 
     @app.get("/p/{token}/conflicts", response_class=HTMLResponse)
