@@ -1,0 +1,57 @@
+{# The optimised plan body: attended-by-day, forced choices, dropped-with-reason.
+   Shared by the standalone plan page (plan.html) and the in-page workspace
+   (_workspace.html) so the two never drift. Expects: attended_days, forced,
+   dropped, plan_base. #}
+{% if not attended_days %}
+<p class="ok">Nothing to plan yet — <a href="{{ plan_base }}">pick some events</a>.</p>
+{% endif %}
+
+{% for day in attended_days %}
+<section class="day">
+  <h3>{{ day.label }} <span class="date">{{ day.date }}</span></h3>
+  <ol class="attend">
+    {% for e in day.events %}
+    <li class="attend-item">
+      <span class="time">{{ e.time }}</span>
+      <span class="title">{{ e.title }}</span>
+      <span class="venue">{{ e.venue }}{% if e.room %} · {{ e.room }}{% endif %}</span>
+      {% if e.weight and e.weight != 1 %}<span class="wt">★{{ e.weight }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endfor %}
+
+{% if forced %}
+<section class="forced">
+  <h3>Forced choices</h3>
+  <p class="hint">Wanted events that mutually exclude (time or travel). The
+    optimiser's pick is marked; you can override by adjusting weights.</p>
+  {% for fc in forced %}
+  <ul class="choice">
+    {% for o in fc.options %}
+    <li class="{{ 'chosen' if o.chosen else 'not-chosen' }}">
+      {{ o.title }} <span class="eid">{{ o.id }}</span>
+      {% if o.chosen %}<span class="badge">chosen</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if dropped %}
+<section class="dropped">
+  <h3>Dropped ({{ dropped|length }})</h3>
+  <ul class="drops">
+    {% for d in dropped %}
+    <li class="drop">
+      <span class="title">{{ d.title }}</span>
+      <span class="reason reason-{{ d.reason | replace(' ', '-') | replace("'", '') }}">{{ d.reason }}</span>
+      {% if d.lost_to %}<span class="lostto">vs {{ d.lost_to | join(', ') }}</span>{% endif %}
+      {% if d.detail %}<span class="detail">{{ d.detail }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

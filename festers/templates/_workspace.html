@@ -1,0 +1,19 @@
+{# The live in-page workspace: a sticky summary strip (picks + conflicts) and a
+   collapsible optimised agenda. This whole element is re-rendered server-side and
+   swapped in by the toggle fetch, so the page stays in sync without a reload.
+   Expects: plan_base, picked_count, conflict_count, attended_count + _agenda
+   fields. #}
+<div id="workspace" class="workspace">
+  <div class="summary">
+    <span class="sum-picked">{{ picked_count }} picked</span>
+    <a class="sum-conflicts {{ 'has-conflicts' if conflict_count else 'no-conflicts' }}"
+       href="{{ plan_base }}/conflicts">
+      {{ conflict_count }} conflict{{ '' if conflict_count == 1 else 's' }}</a>
+  </div>
+  <details class="planpanel" id="planpanel">
+    <summary>Your optimised plan — {{ attended_count }} to attend</summary>
+    <div class="planpanel-body">
+      {% include "_agenda.html" %}
+    </div>
+  </details>
+</div>

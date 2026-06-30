@@ -3,6 +3,7 @@
 {% block content %}
 {% if token %}
 <p class="planbar hint">This is <strong>your plan</strong> — bookmark this page; the link is your key to edit it.</p>
+{% include "_workspace.html" %}
 {% else %}
 <form class="planbar" method="post" action="/f/{{ festival.id }}/request-link">
   <label>Your phone number
@@ -89,7 +90,9 @@
 
 {% if token %}
 <script>
-// Save a tick in-place (no reload, no scroll jump). Reverts the box on failure.
+// Save a tick in-place (no reload, no scroll jump) and refresh the workspace
+// (pick/conflict counts + the optimised agenda) from the returned fragment.
+// Reverts the box on failure.
 async function toggleWant(cb) {
   const form = cb.closest('form');
   cb.disabled = true;
@@ -100,6 +103,19 @@ async function toggleWant(cb) {
       headers: {'X-Requested-With': 'fetch'},
     });
     if (r.status >= 400) throw new Error(r.status);
+    const html = await r.text();
+    const cur = document.getElementById('workspace');
+    if (html.trim() && cur) {
+      const wasOpen = !!document.querySelector('#planpanel[open]');
+      const fresh = new DOMParser()
+        .parseFromString(html, 'text/html')
+        .getElementById('workspace');
+      if (fresh) {
+        const panel = fresh.querySelector('#planpanel');
+        if (panel && wasOpen) panel.setAttribute('open', '');  // keep it open across swaps
+        cur.replaceWith(fresh);
+      }
+    }
   } catch (e) {
     cb.checked = !cb.checked;           // undo the visual change
     alert('Could not save that change — is your link still valid?');

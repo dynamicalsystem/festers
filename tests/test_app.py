@@ -178,6 +178,25 @@ def test_editor_opens_with_a_valid_token(client, token):
     assert "your plan" in html.lower()
 
 
+def test_editor_renders_the_inline_workspace(client, token):
+    # The picker page now carries the live workspace (counts + optimised agenda)
+    # so picking, conflicts and the plan all live on one page.
+    html = client.get(f"/p/{token}").text
+    assert 'id="workspace"' in html
+    assert "picked" in html
+    assert "optimised plan" in html.lower()
+
+
+def test_picking_updates_the_workspace_pick_count(client, token):
+    # Toggling a want on reflects in the fragment's pick count straight away.
+    resp = client.post(
+        f"/p/{token}/toggle",
+        data={"ref": "e042", "kind": "event"},
+        headers={"X-Requested-With": "fetch"},
+    )
+    assert "1 picked" in resp.text
+
+
 def test_invalid_token_shows_link_invalid_404(client):
     resp = client.get("/p/deadbeef")
     assert resp.status_code == 404
@@ -189,14 +208,19 @@ def test_toggle_persists_for_the_token_plan(client, token, env, plan_id):
     assert "e042" in load_wants(plan_id, base_dir=env / "plans").refs()
 
 
-def test_toggle_fetch_returns_204(client, token):
+def test_toggle_fetch_returns_workspace_fragment(client, token):
+    # The fetch path returns the refreshed workspace fragment (not 204) so the
+    # client can swap in live counts + the re-optimised agenda without a reload.
     resp = client.post(
         f"/p/{token}/toggle",
         data={"ref": "e042", "kind": "event"},
         headers={"X-Requested-With": "fetch"},
         follow_redirects=False,
     )
-    assert resp.status_code == 204
+    assert resp.status_code == 200
+    assert 'id="workspace"' in resp.text
+    assert "picked" in resp.text
+    assert "<html" not in resp.text.lower()  # a fragment, not a whole page
 
 
 def test_toggle_nojs_redirects_back_to_the_plan(client, token):

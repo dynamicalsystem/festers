@@ -78,6 +78,21 @@ ul.instances a:hover { text-decoration: underline; }
 header .all-fests { display: inline-block; margin-left: 0.5rem; color: #6cf; text-decoration: none; font-size: 0.75rem; }
 header .all-fests:hover { text-decoration: underline; }
 
+/* in-page workspace: sticky pick/conflict summary + collapsible optimised plan */
+.workspace { position: sticky; top: 0; z-index: 4; background: #fafafa; margin: 0 0 0.75rem; }
+.summary { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+  padding: 0.5rem 0.75rem; background: #111; color: #fff; border-radius: 6px; font-size: 0.9rem; }
+.summary .sum-picked { font-weight: 600; }
+.summary .sum-conflicts { margin-left: auto; text-decoration: none; padding: 0.1rem 0.5rem; border-radius: 999px; }
+.summary .no-conflicts { color: #9fe6b0; background: #143d28; }
+.summary .has-conflicts { color: #fff; background: #c0392b; }
+.planpanel { border: 1px solid #e2e2e2; border-top: 0; border-radius: 0 0 6px 6px; background: #fff; }
+.planpanel > summary { cursor: pointer; padding: 0.5rem 0.75rem; font-size: 0.9rem; font-weight: 600; color: #333; }
+.planpanel > summary:hover { background: #f4f8ff; }
+.planpanel-body { padding: 0 0.75rem 0.5rem; }
+.planpanel-body .day { margin: 0.6rem 0; }
+.planpanel-body .day > h3 { font-size: 0.95rem; border-bottom: 1px solid #ddd; padding-bottom: 0.2rem; }
+
 /* festival index (the landing page) */
 ul.festival-list { list-style: none; margin: 1rem 0; padding: 0; }
 .festival-card { border: 1px solid #e2e2e2; border-radius: 8px; margin: 0.6rem 0; background: #fff; }
