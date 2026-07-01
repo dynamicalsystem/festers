@@ -1,11 +1,25 @@
-# deploy
+# deploy [SUPERSEDED]
 
-festers runs on the box exactly like signal does: a **rootless podman
-container** supervised by a **`podman generate systemd --new` user unit**
-(`container-festers.service`). No compose, no NAS — the box has podman 3.4.4,
-systemd, linger, and a containerised (Docker) Caddy on `caddy-net`.
+> **The live deployment now lives in the `tinsnip` repo**
+> (`dynamicalsystem/tinsnip`, `hosts/gateway/`), not here. This directory
+> described the original hand-rolled model and is kept only as history + the
+> `festers.env.example` template. Do not follow the how-it-works / first-deploy
+> steps below; they describe retired machinery.
+>
+> **Current reality (2026-06-30):**
+> - Supervised by a **Quadlet** unit `festers.container` -> `festers.service`
+>   (not `podman generate systemd` / `container-festers.service`).
+> - Deployed by **`podman auto-update`** (`AutoUpdate=registry` label +
+>   `podman-auto-update.timer`, health-gated via `--sdnotify=healthy`). The
+>   `update.sh` + `festers-update.timer` mechanic below is **retired**.
+> - **Caddy is rootless podman** on a shared `web` network and reaches the app
+>   as **`festers:8000` by container name**. There is no published host port and
+>   no `FESTERS_BIND_HOST` anymore; Docker has been removed from the box.
+> - Restart (rarely needed): `systemctl --user restart festers.service`.
+> - Secrets: `festers.env` on the box (gitignored); off-box backup is the
+>   password manager. See tinsnip issue #1.
 
-## How it works
+## How it worked (historical)
 
 ```
 merge to main ─► release.yml builds & pushes ghcr.io/dynamicalsystem/festers:latest

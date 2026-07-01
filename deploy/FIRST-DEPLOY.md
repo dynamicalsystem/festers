@@ -1,4 +1,11 @@
-# first deploy — cutover to the container
+# first deploy — cutover to the container [HISTORICAL]
+
+> **Done, and superseded.** This recorded the one-time 2026 cutover from the old
+> host-uvicorn service to a container. The box has since moved to **Quadlet +
+> `podman auto-update`**, managed declaratively in the `tinsnip` repo
+> (`hosts/gateway/`) — see its README to bootstrap or rebuild a box. The steps
+> below reference retired units (`container-festers.service`,
+> `festers-update.timer`) and the removed Docker-Caddy; kept only as history.
 
 One-time switch from the old host-uvicorn (`festers.service`) deployment to a
 rootless podman container, supervised like signal. Run on the box
@@ -23,8 +30,9 @@ cp festers.env.example festers.env
 $EDITOR festers.env
 ```
 - [ ] **Reuse the live `FESTERS_SECRET`** from the old service, or every existing
-      plan id / magic link breaks. (Find it in the old unit's env /
-      `~/festers`.)
+      plan id / magic link breaks. (Find it in the old unit's env / `~/festers`.)
+      Its off-box source of truth is the **password manager** — on any rebuild,
+      restore that **exact** value (see tinsnip issue #1).
 - [ ] Set `FESTERS_BASE_URL` and the notifier vars. For Signal:
       `FESTERS_SIGNAL_URL=http://signal:8080` and `FESTERS_SIGNAL_FROM=+447377115354`
       (gigbot) — `run.sh` joins `signal-net` so the name resolves. Confirm the
